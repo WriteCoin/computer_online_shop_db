@@ -1,11 +1,11 @@
 CREATE TABLE IF NOT EXISTS person(
   id serial PRIMARY KEY,
-  first_name character varying(64) NOT NULL,
-  last_name character varying(64) NOT NULL,
+  first_name character varying(255) NOT NULL,
+  last_name character varying(255) NOT NULL,
   user_name character varying(255) NOT NULL,
   user_password character varying(255) NOT NULL,
-  phone character varying(20) NOT NULL,
-  email character varying(32) NOT NULL
+  phone character varying(32) NOT NULL,
+  email character varying(255) NOT NULL
 );
 
 
@@ -171,33 +171,18 @@ ALTER TABLE properties ADD CONSTRAINT properties_to_products FOREIGN KEY (produc
 
 
 -- корзины
-CREATE TABLE IF NOT EXISTS baskets(
+CREATE TABLE IF NOT EXISTS client_products(
   id serial PRIMARY KEY,
-  client_id integer NOT NULL
+  client_id integer NOT NULL,
+	product_id integer NOT NULL,
+	quantity integer NOT NULL
 );
-ALTER TABLE baskets ADD CONSTRAINT baskets_to_clients FOREIGN KEY (client_id)
+ALTER TABLE client_products ADD CONSTRAINT clients FOREIGN KEY (client_id)
 	REFERENCES clients (id) MATCH SIMPLE
 	ON UPDATE NO ACTION
 	ON DELETE NO ACTION;
 
-
-
-
-
-
-
--- товары в корзинах
-CREATE TABLE IF NOT EXISTS products_in_baskets(
-  id serial PRIMARY KEY,
-  basket_id integer NOT NULL,
-  product_id integer NOT NULL
-);
-ALTER TABLE products_in_baskets ADD CONSTRAINT products_in_baskets_to_baskets FOREIGN KEY (basket_id)
-	REFERENCES baskets (id) MATCH SIMPLE
-	ON UPDATE NO ACTION
-	ON DELETE NO ACTION;
-
-ALTER TABLE products_in_baskets ADD CONSTRAINT products_in_baskets_to_products FOREIGN KEY (product_id)
+ALTER TABLE client_products ADD CONSTRAINT products FOREIGN KEY (product_id)
 	REFERENCES products (id) MATCH SIMPLE
 	ON UPDATE NO ACTION
 	ON DELETE NO ACTION;
@@ -227,18 +212,32 @@ CREATE TABLE IF NOT EXISTS payment_methods(
   payment_method_name character varying(32) NOT NULL
 );
 
+-- пункты выдачи заказа
+CREATE TABLE IF NOT EXISTS points_of_issue(
+  id serial PRIMARY KEY,
+  name character varying(255) NOT NULL,
+	address character varying(255) NOT NULL,
+	work_time_start time NOT NULL,
+	work_time_end time NOT NULL
+);
+
 
 
 -- заказы
 CREATE TABLE IF NOT EXISTS orders(
 	id serial PRIMARY KEY,
   order_number integer NOT NULL UNIQUE,
+	contact_name character varying(255),
+	contact_email character varying(255),
+	contact_phone character varying(32),
 	client_id integer NOT NULL,
   way_to_receive_id integer NOT NULL,
   payment_method_id integer NOT NULL,
   delivery_address character varying(255) NOT NULL,
+	point_of_issue_id integer NOT NULL,
   reg_date date NOT NULL,
   date_of_receipt date NOT NULL,
+	actual_date_of_receipt date NOT NULL,
   order_status_id integer NOT NULL
 );
 ALTER TABLE orders ADD CONSTRAINT orders_to_clients FOREIGN KEY (client_id)
@@ -253,6 +252,11 @@ ALTER TABLE orders ADD CONSTRAINT orders_to_ways_to_receive FOREIGN KEY (way_to_
 
 ALTER TABLE orders ADD CONSTRAINT orders_to_payment_methods FOREIGN KEY (payment_method_id)
 	REFERENCES payment_methods (id) MATCH SIMPLE
+	ON UPDATE NO ACTION
+	ON DELETE NO ACTION;
+
+ALTER TABLE orders ADD CONSTRAINT orders_to_points_of_issue FOREIGN KEY (point_of_issue_id)
+	REFERENCES points_of_issue (id) MATCH SIMPLE
 	ON UPDATE NO ACTION
 	ON DELETE NO ACTION;
 
@@ -292,17 +296,10 @@ ALTER TABLE products_in_orders ADD CONSTRAINT products_in_orders_to_products FOR
 CREATE TABLE IF NOT EXISTS refunds(
 	id serial PRIMARY KEY,
 	order_id integer NOT NULL,
-  product_id integer NOT NULL,
-	quantity integer NOT NULL,
 	date_of_refund date NOT NULL,
 	reason_for_refund text
 );
 ALTER TABLE refunds ADD CONSTRAINT refunds_to_orders FOREIGN KEY (order_id)
 	REFERENCES orders (id) MATCH SIMPLE
-	ON UPDATE NO ACTION
-	ON DELETE NO ACTION;
-
-ALTER TABLE refunds ADD CONSTRAINT refunds_to_products FOREIGN KEY (product_id)
-	REFERENCES products (id) MATCH SIMPLE
 	ON UPDATE NO ACTION
 	ON DELETE NO ACTION;
